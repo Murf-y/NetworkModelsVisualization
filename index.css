@@ -6,6 +6,7 @@ body {
   background-color: #eef7ff;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
+  font-size: 16px;
 }
 
 #main {
