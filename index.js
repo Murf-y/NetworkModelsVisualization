@@ -73,7 +73,6 @@ class Visualizer {
     const N = this.sideBarManager.getN();
     const p = this.sideBarManager.getP();
 
-    console.log("Creating graph with N = ", N, " and p = ", p);
     const edges = [];
 
     const nodes = Array.from({ length: N }, (_, i) => ({
@@ -99,14 +98,16 @@ class Visualizer {
     const m0 = this.sideBarManager.getM0();
     const m = this.sideBarManager.getM();
 
-    console.log(
-      "Creating graph with N = ",
-      N,
-      " and m0 = ",
-      m0,
-      " and m = ",
-      m
-    );
+    // make sure that m0 is smaller than N
+    if (m0 >= N) {
+      alert("m0 must be smaller than N");
+      return;
+    }
+
+    if (m > m0) {
+      alert("m must be smaller than m0");
+      return;
+    }
 
     const nodes = Array.from({ length: m0 }, (_, i) => ({
       group: "nodes",
@@ -165,6 +166,15 @@ class SideBarManager {
     this.graphTypeSelect = document.getElementById("model-select");
 
     this.nInput.addEventListener("change", () => {
+      this.updateParentCallback(this.graphType);
+    });
+    this.pInput.addEventListener("change", () => {
+      this.updateParentCallback(this.graphType);
+    });
+    this.m0Input.addEventListener("change", () => {
+      this.updateParentCallback(this.graphType);
+    });
+    this.mInput.addEventListener("change", () => {
       this.updateParentCallback(this.graphType);
     });
 
