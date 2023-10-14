@@ -9,6 +9,15 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.19.0/cytoscape.min.css"
     />
     <link rel="stylesheet" href="index.css" />
+    <script src="https://unpkg.com/webcola/WebCola/cola.min.js"></script>
+    <script src="cytoscape-cola.js"></script>
+    <script src=" https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"
+      integrity="sha512-rOsRHy2O7kykGotH99Bi0+LyynL6rfQpaMiKOwYa1K1jYAFksJUwXE1gE6Relgo88g6lQ/uf8NaWeyzi1T53Zg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
   </head>
   <body>
     <div id="main">
@@ -56,18 +65,28 @@
             <span id="max-degree-value">0</span>
           </div>
         </div>
+
+        <div id="control" class="sidebar-section">
+          <div class="sidebar-section-title">Control</div>
+          <div class="control-item">
+            📊
+            <label class="switch">
+              <input type="checkbox" id="degree-distribution-switch" checked />
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+
+        <div style="position: absolute; bottom: 1rem">
+          Made with 💙 by <a href="https://murfy.netlify.app/">@murf</a>
+        </div>
+      </div>
+      <div id="degree-distribution">
+        <canvas id="degree-distribution-line" width="200" height="200"></canvas>
+        <canvas id="degree-distribution-bar" width="200" height="200"></canvas>
       </div>
       <div id="cy"></div>
     </div>
-    <script src="https://unpkg.com/webcola/WebCola/cola.min.js"></script>
-    <script src="cytoscape-cola.js"></script>
-
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"
-      integrity="sha512-rOsRHy2O7kykGotH99Bi0+LyynL6rfQpaMiKOwYa1K1jYAFksJUwXE1gE6Relgo88g6lQ/uf8NaWeyzi1T53Zg=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
     <script src="index.js"></script>
   </body>
 </html>

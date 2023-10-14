@@ -49,6 +49,13 @@ class Visualizer {
             "line-color": "#bfe0ff",
           },
         },
+
+        {
+          selector: ".faded",
+          style: {
+            opacity: 0.25,
+          },
+        },
       ],
 
       layout: {
@@ -58,6 +65,120 @@ class Visualizer {
 
       minZoom: 0.4,
       maxZoom: 2,
+    });
+
+    this.cy.on("mouseover", "node", (event) => {
+      const node = event.target;
+      const neighborhood = node.neighborhood().add(node);
+
+      this.cy.elements().addClass("faded");
+      neighborhood.removeClass("faded");
+    });
+
+    this.cy.on("mouseout", "node", (event) => {
+      const node = event.target;
+      const neighborhood = node.neighborhood().add(node);
+
+      this.cy.elements().removeClass("faded");
+      neighborhood.removeClass("faded");
+    });
+
+    this.cy.on("tap", (event) => {
+      if (event.target === this.cy) {
+        this.cy.elements().removeClass("faded");
+      }
+    });
+
+    const degrees = {};
+    this.cy.nodes().forEach((node) => {
+      degrees[node.id()] = node.degree();
+    });
+
+    const maxDegree = Math.max(...Object.values(degrees));
+
+    const histogramData = Array.from({ length: maxDegree + 1 }, (_, i) => ({
+      degree: i,
+      count: 0,
+    }));
+
+    Object.values(degrees).forEach((degree) => {
+      histogramData[degree].count += 1;
+    });
+
+    const lineChartCanvas = document.getElementById("degree-distribution-line");
+    const barChartCanvas = document.getElementById("degree-distribution-bar");
+
+    if (this.linechart) {
+      this.linechart.destroy();
+    }
+
+    if (this.barChart) {
+      this.barChart.destroy();
+    }
+
+    this.linechart = new Chart(lineChartCanvas, {
+      type: "line",
+      data: {
+        labels: histogramData.map((data) => data.degree),
+        datasets: [
+          {
+            label: "Degree Distribution",
+            data: histogramData.map((data) => data.count),
+            backgroundColor: "rgba(252, 73, 111, 0.7)",
+            borderColor: "rgba(252, 73, 111, 1)",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Degree",
+            },
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Frequency",
+            },
+          },
+        },
+      },
+    });
+    this.barChart = new Chart(barChartCanvas, {
+      type: "bar",
+      data: {
+        labels: histogramData.map((data) => data.degree),
+        datasets: [
+          {
+            label: "Degree Distribution",
+            data: histogramData.map((data) => data.count),
+            backgroundColor: "rgba(75, 192, 192, 1)",
+            borderColor: "rgba(75, 192, 192, 1)",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Degree",
+            },
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Frequency",
+            },
+          },
+        },
+      },
     });
   }
 
@@ -164,6 +285,9 @@ class SideBarManager {
     this.mInput = document.getElementById("m");
     this.m0Input = document.getElementById("m0");
     this.graphTypeSelect = document.getElementById("model-select");
+    this.degreeDistributionSwitch = document.getElementById(
+      "degree-distribution-switch"
+    );
 
     this.nInput.addEventListener("change", () => {
       this.updateParentCallback(this.graphType);
@@ -184,6 +308,15 @@ class SideBarManager {
         this.graphType = newGraphType;
         this.updateParametersSection();
         this.updateParentCallback(this.graphType);
+      }
+    });
+
+    this.degreeDistributionSwitch.addEventListener("change", (event) => {
+      const checked = event.target.checked;
+      if (!checked) {
+        document.getElementById("degree-distribution").style.display = "none";
+      } else {
+        document.getElementById("degree-distribution").style.display = "flex";
       }
     });
 
