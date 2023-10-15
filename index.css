@@ -96,7 +96,6 @@ input {
 }
 
 .control-item {
-  font-size: x-large;
   display: flex;
   flex-direction: row;
   align-items: center;
