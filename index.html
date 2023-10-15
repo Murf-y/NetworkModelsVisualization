@@ -62,11 +62,12 @@
         </div>
         <div id="erdos-renyi-parameters" class="sidebar-section">
           <div class="sidebar-section-title">Parameters</div>
+          <label for="p">p</label>
           <input type="number" id="p" value="0.2" step="0.01" min="0" max="1" />
         </div>
         <div id="barabasi-albert-parameters" class="sidebar-section">
           <div class="sidebar-section-title">Parameters</div>
-          <label for="n">m0</label>
+          <label for="m0">m0</label>
           <input type="number" id="m0" value="4" step="1" min="1" max="10" />
           <label for="m">m</label>
           <input type="number" id="m" value="1" step="1" min="1" max="35" />
@@ -90,14 +91,25 @@
             <label for="max-degree">Max Degree:</label>
             <span id="max-degree-value">0</span>
           </div>
+          <div id="avg-clustering-coefficient" class="metric">
+            <label for="avg-clustering-coefficient">Avg Clustering:</label>
+            <span id="avg-clustering-coefficient-value">0</span>
+          </div>
         </div>
 
         <div id="control" class="sidebar-section">
           <div class="sidebar-section-title">Control</div>
           <div class="control-item">
-            📊
+            Charts 📊
             <label class="switch">
               <input type="checkbox" id="degree-distribution-switch" checked />
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="control-item">
+            Node Size
+            <label class="switch">
+              <input type="checkbox" id="node-size-switch" checked />
               <span class="slider round"></span>
             </label>
           </div>
@@ -110,6 +122,11 @@
       <div id="degree-distribution">
         <canvas id="degree-distribution-line" width="200" height="200"></canvas>
         <canvas id="degree-distribution-bar" width="200" height="200"></canvas>
+        <canvas
+          id="clustering-coefficient-chart"
+          width="200"
+          height="200"
+        ></canvas>
       </div>
       <div id="cy"></div>
     </div>
