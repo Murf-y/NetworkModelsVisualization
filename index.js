@@ -12,8 +12,7 @@ class Visualizer {
     });
 
     cytoscape.use(cytoscapeCola);
-    this.initializeGraph();
-    this.sideBarManager.updateMetrics(this.cy);
+    this.sideBarManager.updateMetrics(this.initializeGraph());
   }
 
   updateGraphType(graphType) {
@@ -91,22 +90,81 @@ class Visualizer {
 
     const degrees = {};
     this.cy.nodes().forEach((node) => {
-      degrees[node.id()] = node.degree();
+      const neighbors = node.neighborhood();
+      for (let i = 0; i < neighbors.length; i++) {
+        if (neighbors[i]._private.group === "nodes") {
+          if (degrees[node.id()]) {
+            degrees[node.id()] += 1;
+          } else {
+            degrees[node.id()] = 1;
+          }
+        }
+      }
     });
-
     const maxDegree = Math.max(...Object.values(degrees));
 
-    const histogramData = Array.from({ length: maxDegree + 1 }, (_, i) => ({
+    const degreeData = Array.from({ length: maxDegree + 1 }, (_, i) => ({
       degree: i,
       count: 0,
     }));
 
     Object.values(degrees).forEach((degree) => {
-      histogramData[degree].count += 1;
+      degreeData[degree].count += 1;
     });
+
+    const clusteringCoefficients = [];
+    this.cy.nodes().forEach((node) => {
+      // neighbors will contain node neighbors of i + the edge between them
+      const neighbors = node.neighborhood();
+      const degree = node.degree();
+
+      if (degree < 2) {
+        clusteringCoefficients.push(0);
+        return;
+      }
+
+      let edgesBetweenNeighbors = 0;
+
+      neighbors.forEach((neighbor) => {
+        if (neighbor._private.group === "nodes") {
+          const neighborNeighbors = neighbor.neighborhood();
+          neighborNeighbors.forEach((neighborNeighbor) => {
+            if (neighborNeighbor._private.group === "nodes") {
+              if (neighborNeighbor.id() !== node.id()) {
+                if (neighbors.has(neighborNeighbor)) {
+                  edgesBetweenNeighbors += 1;
+                }
+              }
+            }
+          });
+        }
+      });
+
+      clusteringCoefficients.push(
+        (2 * edgesBetweenNeighbors) / (degree * (degree - 1))
+      );
+    });
+
+    const frequencyMap = {};
+    clusteringCoefficients.forEach((value) => {
+      if (frequencyMap[value]) {
+        frequencyMap[value] += 1;
+      } else {
+        frequencyMap[value] = 1;
+      }
+    });
+
+    // Sort the unique values
+    const uniqueValues = Object.keys(frequencyMap)
+      .map(parseFloat)
+      .sort((a, b) => a - b);
+    const frequencies = uniqueValues.map((value) => frequencyMap[value]);
 
     const lineChartCanvas = document.getElementById("degree-distribution-line");
     const barChartCanvas = document.getElementById("degree-distribution-bar");
+    const clusteringCoefficientCanvas = document.getElementById(
+      "clustering-coefficient-chart"
+    );
 
     if (this.linechart) {
       this.linechart.destroy();
@@ -116,14 +174,18 @@ class Visualizer {
       this.barChart.destroy();
     }
 
+    if (this.clusteringCoefficientChart) {
+      this.clusteringCoefficientChart.destroy();
+    }
+
     this.linechart = new Chart(lineChartCanvas, {
       type: "line",
       data: {
-        labels: histogramData.map((data) => data.degree),
+        labels: degreeData.map((data) => data.degree),
         datasets: [
           {
             label: "Degree Distribution",
-            data: histogramData.map((data) => data.count),
+            data: degreeData.map((data) => data.count),
             backgroundColor: "rgba(252, 73, 111, 0.7)",
             borderColor: "rgba(252, 73, 111, 1)",
             borderWidth: 1,
@@ -151,11 +213,11 @@ class Visualizer {
     this.barChart = new Chart(barChartCanvas, {
       type: "bar",
       data: {
-        labels: histogramData.map((data) => data.degree),
+        labels: degreeData.map((data) => data.degree),
         datasets: [
           {
             label: "Degree Distribution",
-            data: histogramData.map((data) => data.count),
+            data: degreeData.map((data) => data.count),
             backgroundColor: "rgba(75, 192, 192, 1)",
             borderColor: "rgba(75, 192, 192, 1)",
             borderWidth: 1,
@@ -180,6 +242,57 @@ class Visualizer {
         },
       },
     });
+
+    this.clusteringCoefficientChart = new Chart(clusteringCoefficientCanvas, {
+      type: "line",
+      data: {
+        labels: uniqueValues.map((value) => value.toFixed(2)), // Format as desired
+        datasets: [
+          {
+            label: "Frequency",
+            data: frequencies,
+            backgroundColor: "rgb(255,159,64)",
+            borderColor: "rgb(255,159,64)",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Frequency",
+            },
+          },
+          x: {
+            title: {
+              display: true,
+              text: "Clustering Coefficient",
+            },
+          },
+        },
+      },
+    });
+
+    if (this.sideBarManager.shouldScaleNodes) {
+      // scale each node based on its degree
+      const nodes = this.cy.nodes();
+      const minSize = 5;
+      const maxSize = 20;
+      nodes.forEach((node) => {
+        const degree = node.degree();
+        const scale = minSize + (maxSize - minSize) * (degree / maxDegree);
+
+        node.style({
+          width: scale,
+          height: scale,
+        });
+      });
+    }
+
+    return this.cy;
   }
 
   creataGraph() {
@@ -279,6 +392,7 @@ class Visualizer {
 class SideBarManager {
   constructor(graphType, updateParentCallback) {
     this.graphType = graphType;
+    this.shouldScaleNodes = true;
     this.updateParentCallback = updateParentCallback;
     this.nInput = document.getElementById("n");
     this.pInput = document.getElementById("p");
@@ -288,11 +402,18 @@ class SideBarManager {
     this.degreeDistributionSwitch = document.getElementById(
       "degree-distribution-switch"
     );
+    this.nodeSizeSwitch = document.getElementById("node-size-switch");
 
     this.nInput.addEventListener("change", () => {
       this.updateParentCallback(this.graphType);
     });
     this.pInput.addEventListener("change", () => {
+      if (this.pInput.value > 1) {
+        this.pInput.value = 1;
+      } else if (this.pInput.value < 0) {
+        this.pInput.value = 0;
+      }
+
       this.updateParentCallback(this.graphType);
     });
     this.m0Input.addEventListener("change", () => {
@@ -320,6 +441,16 @@ class SideBarManager {
       }
     });
 
+    this.nodeSizeSwitch.addEventListener("change", (event) => {
+      const checked = event.target.checked;
+      if (!checked) {
+        this.shouldScaleNodes = false;
+      } else {
+        this.shouldScaleNodes = true;
+      }
+      this.updateParentCallback(this.graphType);
+    });
+
     this.updateParametersSection();
   }
 
@@ -342,23 +473,71 @@ class SideBarManager {
   }
 
   updateMetrics(cyInstance) {
-    const nodes = cyInstance.nodes().length;
+    const numberOfNodes = cyInstance.nodes().length;
     const edges = cyInstance.edges().length;
-    const avgDegree = (2 * edges) / nodes;
+    const avgDegree = (2 * edges) / numberOfNodes;
     let maxDegree = 0;
 
-    for (let i = 0; i < nodes; i++) {
-      const degree = cyInstance.$(`node[id="${i}"]`).degree();
-      if (degree > maxDegree) {
-        maxDegree = degree;
+    const nodes = cyInstance.nodes();
+    const degrees = {};
+    nodes.forEach((node) => {
+      const neighbors = node.neighborhood();
+      for (let i = 0; i < neighbors.length; i++) {
+        if (neighbors[i]._private.group === "nodes") {
+          if (degrees[node.id()]) {
+            degrees[node.id()] += 1;
+          } else {
+            degrees[node.id()] = 1;
+          }
+        }
       }
+    });
+
+    maxDegree = Math.max(...Object.values(degrees));
+
+    let sum = 0;
+    nodes.forEach((node) => {
+      // neighbors will contain node neighbors of i + the edge between them
+      const neighbors = node.neighborhood();
+      const degree = node.degree();
+
+      if (degree < 2) {
+        return;
+      }
+
+      let edgesBetweenNeighbors = 0;
+
+      neighbors.forEach((neighbor) => {
+        if (neighbor._private.group === "nodes") {
+          const neighborNeighbors = neighbor.neighborhood();
+          neighborNeighbors.forEach((neighborNeighbor) => {
+            if (neighborNeighbor._private.group === "nodes") {
+              if (neighborNeighbor.id() !== node.id()) {
+                if (neighbors.has(neighborNeighbor)) {
+                  edgesBetweenNeighbors += 1;
+                }
+              }
+            }
+          });
+        }
+      });
+
+      sum += (2 * edgesBetweenNeighbors) / (degree * (degree - 1));
+    });
+
+    if (isNaN(sum)) {
+      sum = 0;
     }
 
-    document.getElementById("nodes-value").innerText = nodes;
+    const avgClusteringCoefficient = sum / numberOfNodes;
+
+    document.getElementById("nodes-value").innerText = numberOfNodes;
     document.getElementById("edges-value").innerText = edges;
     document.getElementById("avg-degree-value").innerText =
       avgDegree.toFixed(2);
     document.getElementById("max-degree-value").innerText = maxDegree;
+    document.getElementById("avg-clustering-coefficient-value").innerText =
+      avgClusteringCoefficient.toFixed(2);
   }
 
   getN() {
