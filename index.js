@@ -1,6 +1,7 @@
 const GraphType = {
   ERDOS_RENYI: "erdos-renyi",
   BARABASI_ALBERT: "barabasi-albert",
+  WATTS_STROGATZ: "watts-strogatz",
 };
 
 class Visualizer {
@@ -298,8 +299,10 @@ class Visualizer {
   creataGraph() {
     if (this.graphType === GraphType.ERDOS_RENYI) {
       return this.createErdosRenyiGraph();
-    } else {
+    } else if (this.graphType === GraphType.BARABASI_ALBERT) {
       return this.createBarabasiAlbertGraph();
+    } else {
+      return this.createWattsStrogatzGraph();
     }
   }
 
@@ -387,6 +390,49 @@ class Visualizer {
 
     return elements;
   }
+
+  createWattsStrogatzGraph() {
+    const N = this.sideBarManager.getN();
+    const k = this.sideBarManager.getK();
+    const p = this.sideBarManager.getPWatts();
+
+    const nodes = Array.from({ length: N }, (_, i) => ({
+      group: "nodes",
+      data: { id: i },
+    }));
+
+    const edges = [];
+
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < i + k / 2 + 1; j++) {
+        const target = j % N;
+        if (i !== target) {
+          edges.push({ group: "edges", data: { source: i, target: target } });
+        }
+      }
+    }
+
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < i + k / 2 + 1; j++) {
+        if (Math.random() < p) {
+          const newTarget = Math.floor(Math.random() * N);
+
+          if (newTarget === i) {
+            newTarget = (newTarget + 1) % N;
+          }
+
+          edges.push({
+            group: "edges",
+            data: { source: i, target: newTarget },
+          });
+        }
+      }
+    }
+
+    const elements = nodes.concat(edges);
+
+    return elements;
+  }
 }
 
 class SideBarManager {
@@ -398,6 +444,9 @@ class SideBarManager {
     this.pInput = document.getElementById("p");
     this.mInput = document.getElementById("m");
     this.m0Input = document.getElementById("m0");
+    this.kInput = document.getElementById("k");
+    this.pWattsInput = document.getElementById("p-watts");
+
     this.graphTypeSelect = document.getElementById("model-select");
     this.degreeDistributionSwitch = document.getElementById(
       "degree-distribution-switch"
@@ -420,6 +469,24 @@ class SideBarManager {
       this.updateParentCallback(this.graphType);
     });
     this.mInput.addEventListener("change", () => {
+      this.updateParentCallback(this.graphType);
+    });
+
+    this.kInput.addEventListener("change", () => {
+      // Make sure that k is even
+      if (this.kInput.value % 2 === 1) {
+        this.kInput.value = parseInt(this.kInput.value) + 1;
+      }
+      this.updateParentCallback(this.graphType);
+    });
+
+    this.pWattsInput.addEventListener("change", () => {
+      if (this.pWattsInput.value > 1) {
+        this.pWattsInput.value = 1;
+      } else if (this.pWattsInput.value < 0) {
+        this.pWattsInput.value = 0;
+      }
+
       this.updateParentCallback(this.graphType);
     });
 
@@ -465,9 +532,19 @@ class SideBarManager {
       document.getElementById("erdos-renyi-parameters").style.display = "flex";
       document.getElementById("barabasi-albert-parameters").style.display =
         "none";
+      document.getElementById("watts-strogatz-parameters").style.display =
+        "none";
+    } else if (this.graphType === GraphType.BARABASI_ALBERT) {
+      document.getElementById("erdos-renyi-parameters").style.display = "none";
+      document.getElementById("barabasi-albert-parameters").style.display =
+        "flex";
+      document.getElementById("watts-strogatz-parameters").style.display =
+        "none";
     } else {
       document.getElementById("erdos-renyi-parameters").style.display = "none";
       document.getElementById("barabasi-albert-parameters").style.display =
+        "none";
+      document.getElementById("watts-strogatz-parameters").style.display =
         "flex";
     }
   }
@@ -555,114 +632,14 @@ class SideBarManager {
   getM0() {
     return parseInt(this.m0Input.value);
   }
-}
 
-function updateGraphNodes() {
-  const oldN = cy.nodes().length;
-  const newN = parseInt(nInput.value);
-
-  if (newN > oldN) {
-    const nodes = Array.from({ length: newN - oldN }, (_, i) => ({
-      group: "nodes",
-      data: { id: oldN + i },
-    }));
-
-    cy.add(nodes);
-
-    // add edges
-
-    if (currentGraphType === GraphType.BARABASI_ALBERT) {
-      const m0 = parseInt(m0Input.value);
-      const m = parseInt(mInput.value);
-
-      const newEdges = [];
-      const degrees = new Map();
-
-      for (let j = 0; j < oldN; j++) {
-        const degree = cy.$(`node[id="${j}"]`).degree();
-        degrees.set(j, degree);
-      }
-
-      const sum = Array.from(degrees.values()).reduce((a, b) => a + b, 0);
-
-      for (let i = oldN; i < newN; i++) {
-        const newEdges = [];
-
-        for (let j = 0; j < m; j++) {
-          const r = Math.random();
-          let acc = 0;
-
-          for (let k = 0; k < i; k++) {
-            acc += degrees.get(k) / sum;
-
-            if (r < acc) {
-              newEdges.push({ group: "edges", data: { source: i, target: k } });
-              break;
-            }
-          }
-        }
-
-        nodes.push({ group: "nodes", data: { id: i } });
-        edges.push(...newEdges);
-      }
-
-      cy.add(newEdges);
-    } else {
-      const p = parseFloat(pInput.value);
-      const edges = [];
-
-      for (let i = 0; i < newN; i++) {
-        for (let j = i + 1; j < newN; j++) {
-          if (Math.random() < p) {
-            edges.push({ group: "edges", data: { source: i, target: j } });
-          }
-        }
-      }
-      cy.add(edges);
-    }
-  } else {
-    const nodes = cy.nodes().slice(newN);
-    cy.remove(nodes);
+  getK() {
+    return parseInt(this.kInput.value);
   }
 
-  const layout = cy.layout({
-    name: "cola",
-    nodeSpacing: 20,
-  });
-
-  layout.run();
-
-  updateMetrics();
-}
-
-function updateGraphEdgesBasedOnP() {
-  const p = parseFloat(pInput.value);
-  const nodes = cy.nodes().length;
-
-  // go through all edges and remove them
-  const edges = cy.edges();
-  cy.remove(edges);
-
-  // add new edges
-  const newEdges = [];
-
-  for (let i = 0; i < nodes; i++) {
-    for (let j = i + 1; j < nodes; j++) {
-      if (Math.random() < p) {
-        newEdges.push({ group: "edges", data: { source: i, target: j } });
-      }
-    }
+  getPWatts() {
+    return parseFloat(this.pWattsInput.value);
   }
-
-  cy.add(newEdges);
-  const layout = cy.layout({
-    name: "cola",
-    nodeSpacing: 20,
-  });
-
-  layout.run();
-
-  updateMetrics();
 }
 
 const visualizer = new Visualizer(GraphType.ERDOS_RENYI);
