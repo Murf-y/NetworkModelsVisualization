@@ -415,7 +415,7 @@ class Visualizer {
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < i + k / 2 + 1; j++) {
         if (Math.random() < p) {
-          const newTarget = Math.floor(Math.random() * N);
+          let newTarget = Math.floor(Math.random() * N);
 
           if (newTarget === i) {
             newTarget = (newTarget + 1) % N;
