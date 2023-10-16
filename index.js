@@ -608,6 +608,22 @@ class SideBarManager {
 
     const avgClusteringCoefficient = sum / numberOfNodes;
 
+    // calculate avg path length
+    const distances = [];
+    nodes.forEach((node) => {
+      const bfs = cyInstance.elements().bfs({
+        roots: node,
+        visit: (v, e, u, i, depth) => {
+          if (depth > 0) {
+            distances.push(depth);
+          }
+        },
+      });
+    });
+
+    const avgPathLength =
+      distances.reduce((a, b) => a + b, 0) / distances.length;
+
     document.getElementById("nodes-value").innerText = numberOfNodes;
     document.getElementById("edges-value").innerText = edges;
     document.getElementById("avg-degree-value").innerText =
@@ -615,6 +631,8 @@ class SideBarManager {
     document.getElementById("max-degree-value").innerText = maxDegree;
     document.getElementById("avg-clustering-coefficient-value").innerText =
       avgClusteringCoefficient.toFixed(2);
+    document.getElementById("avg-path-length-value").innerText =
+      avgPathLength.toFixed(2);
   }
 
   getN() {
