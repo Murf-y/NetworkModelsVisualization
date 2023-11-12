@@ -622,12 +622,16 @@ class SideBarManager {
     });
 
     const avgPathLength =
-      distances.reduce((a, b) => a + b, 0) / distances.length;
+      (distances.reduce((a, b) => a + b, 0) / numberOfNodes) *
+      (numberOfNodes - 1);
+
+    const density = (2 * edges) / (numberOfNodes * (numberOfNodes - 1));
 
     document.getElementById("nodes-value").innerText = numberOfNodes;
     document.getElementById("edges-value").innerText = edges;
     document.getElementById("avg-degree-value").innerText =
       avgDegree.toFixed(2);
+    document.getElementById("density-value").innerText = density.toFixed(2);
     document.getElementById("max-degree-value").innerText = maxDegree;
     document.getElementById("avg-clustering-coefficient-value").innerText =
       avgClusteringCoefficient.toFixed(2);
