@@ -1,158 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Network Models Phase Transition</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.19.0/cytoscape.min.css"
-    />
-    <link rel="stylesheet" href="index.css" />
-    <script src="https://unpkg.com/webcola/WebCola/cola.min.js"></script>
-    <script src="cytoscape-cola.js"></script>
-    <script src=" https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js"></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"
-      integrity="sha512-rOsRHy2O7kykGotH99Bi0+LyynL6rfQpaMiKOwYa1K1jYAFksJUwXE1gE6Relgo88g6lQ/uf8NaWeyzi1T53Zg=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
 
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/assets/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/assets/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="/assets/favicon-16x16.png"
-    />
-    <link rel="manifest" href="/assets/site.webmanifest" />
-    <link
-      rel="mask-icon"
-      href="/assets/safari-pinned-tab.svg"
-      color="#5bbad5"
-    />
-    <meta name="msapplication-TileColor" content="#da532c" />
-    <meta name="theme-color" content="#ffffff" />
-  </head>
-  <body>
-    <div id="main">
-      <div id="sidebar">
-        <div id="model-selection-container" class="sidebar-section">
-          <div class="sidebar-section-title">Model</div>
-          <select id="model-select">
-            <option value="erdos-renyi">Erdős-Rényi</option>
-            <option value="barabasi-albert">Barabási-Albert</option>
-            <option value="watts-strogatz">Watts-Strogatz</option>
-          </select>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">Global Parameters</div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NETLAB</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <!-- Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"
+    integrity="sha512-rOsRHy2O7kykGotH99Bi0+LyynL6rfQpaMiKOwYa1K1jYAFksJUwXE1gE6Relgo88g6lQ/uf8NaWeyzi1T53Zg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://unpkg.com/webcola/WebCola/cola.min.js"></script>
+  <script src="cytoscape-cola.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="index.css" />
+
+  <!-- Favicon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png" />
+  <link rel="manifest" href="/assets/site.webmanifest" />
+  <meta name="theme-color" content="#08080f" />
+</head>
+
+<body>
+
+  <!-- Mobile panel toggle -->
+  <button id="panel-toggle" class="panel-toggle" aria-label="Toggle panel">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"
+      stroke-linecap="round">
+      <line x1="3" y1="4" x2="15" y2="4" />
+      <line x1="3" y1="9" x2="15" y2="9" />
+      <line x1="3" y1="14" x2="15" y2="14" />
+    </svg>
+  </button>
+
+  <!-- ─── Control Panel ─── -->
+  <aside id="panel" class="panel">
+
+    <header class="panel-header">
+      <h1 class="logo">NET<span class="logo-accent">LAB</span></h1>
+      <p class="panel-sub">Network Simulator</p>
+    </header>
+
+    <!-- Model Selection -->
+    <section class="block">
+      <div class="block-label">MODEL</div>
+      <div class="model-tabs" id="model-tabs">
+        <button class="tab active" data-model="erdos-renyi" title="Erdős–Rényi">ER</button>
+        <button class="tab" data-model="barabasi-albert" title="Barabási–Albert">BA</button>
+        <button class="tab" data-model="watts-strogatz" title="Watts–Strogatz">WS</button>
+      </div>
+      <div class="model-name" id="model-name">Erdős–Rényi</div>
+    </section>
+
+    <!-- Parameters -->
+    <section class="block">
+      <div class="block-label">PARAMETERS</div>
+
+      <!-- N (shared) -->
+      <div class="param">
+        <div class="param-head">
           <label for="n">N</label>
-          <input type="number" id="n" value="10" step="1" min="1" max="100" />
+          <output id="n-val">20</output>
         </div>
-        <div id="erdos-renyi-parameters" class="sidebar-section">
-          <div class="sidebar-section-title">Parameters</div>
-          <label for="p">p</label>
-          <input type="number" id="p" value="0.2" step="0.01" min="0" max="1" />
-        </div>
-        <div id="barabasi-albert-parameters" class="sidebar-section">
-          <div class="sidebar-section-title">Parameters</div>
-          <label for="m0">m0</label>
-          <input type="number" id="m0" value="4" step="1" min="1" max="10" />
-          <label for="m">m</label>
-          <input type="number" id="m" value="1" step="1" min="1" max="35" />
-        </div>
-        <div id="watts-strogatz-parameters" class="sidebar-section">
-          <div class="sidebar-section-title">Parameters</div>
-          <label for="k">k</label>
-          <input type="number" id="k" value="2" step="2" min="2" max="10" />
-          <label for="p-watts">p</label>
-          <input
-            type="number"
-            id="p-watts"
-            value="0.2"
-            step="0.01"
-            min="0"
-            max="1"
-          />
-        </div>
+        <input type="range" id="n" min="3" max="100" value="20" />
+      </div>
 
-        <div id="metrics" class="sidebar-section">
-          <div class="sidebar-section-title">Metrics</div>
-          <div id="nodes" class="metric">
-            <label for="nodes">Nodes:</label>
-            <span id="nodes-value">0</span>
+      <!-- Erdős–Rényi -->
+      <div id="er-params" class="model-params">
+        <div class="param">
+          <div class="param-head">
+            <label for="p">p</label>
+            <output id="p-val">0.20</output>
           </div>
-          <div id="edges" class="metric">
-            <label for="edges">Edges:</label>
-            <span id="edges-value">0</span>
-          </div>
-          <div id="avg-degree" class="metric">
-            <label for="avg-degree">Avg Degree:</label>
-            <span id="avg-degree-value">0</span>
-          </div>
-          <div id="density" class="metric">
-            <label for="density">Density:</label>
-            <span id="density-value">0</span>
-          </div>
-          <div id="max-degree" class="metric">
-            <label for="max-degree">Max Degree:</label>
-            <span id="max-degree-value">0</span>
-          </div>
-          <div id="avg-clustering-coefficient" class="metric">
-            <label for="avg-clustering-coefficient">Avg Clustering:</label>
-            <span id="avg-clustering-coefficient-value">0</span>
-          </div>
-          <div id="avg-path-length" class="metric">
-            <label for="avg-path-length">Avg Path Length:</label>
-            <span id="avg-path-length-value">0</span>
-          </div>
-        </div>
-
-        <div id="control" class="sidebar-section">
-          <div class="sidebar-section-title">Control</div>
-          <div class="control-item">
-            Charts 📊
-            <label class="switch">
-              <input type="checkbox" id="degree-distribution-switch" checked />
-              <span class="slider round"></span>
-            </label>
-          </div>
-          <div class="control-item">
-            Node Size
-            <label class="switch">
-              <input type="checkbox" id="node-size-switch" checked />
-              <span class="slider round"></span>
-            </label>
-          </div>
-        </div>
-
-        <div style="position: absolute; bottom: 1rem; font-size: smaller">
-          Made with 💙 by <a href="https://murfy.netlify.app/">@murf</a>
+          <input type="range" id="p" min="0" max="1" step="0.01" value="0.2" />
         </div>
       </div>
-      <div id="degree-distribution">
-        <canvas id="degree-distribution-line" width="200" height="200"></canvas>
-        <canvas id="degree-distribution-bar" width="200" height="200"></canvas>
-        <canvas
-          id="clustering-coefficient-chart"
-          width="200"
-          height="200"
-        ></canvas>
+
+      <!-- Barabási–Albert -->
+      <div id="ba-params" class="model-params" hidden>
+        <div class="param">
+          <div class="param-head">
+            <label for="m0">m₀</label>
+            <output id="m0-val">4</output>
+          </div>
+          <input type="range" id="m0" min="1" max="20" value="4" />
+        </div>
+        <div class="param">
+          <div class="param-head">
+            <label for="m">m</label>
+            <output id="m-val">1</output>
+          </div>
+          <input type="range" id="m" min="1" max="10" value="1" />
+        </div>
       </div>
-      <div id="cy"></div>
+
+      <!-- Watts–Strogatz -->
+      <div id="ws-params" class="model-params" hidden>
+        <div class="param">
+          <div class="param-head">
+            <label for="k">k</label>
+            <output id="k-val">4</output>
+          </div>
+          <input type="range" id="k" min="2" max="20" step="2" value="4" />
+        </div>
+        <div class="param">
+          <div class="param-head">
+            <label for="p-watts">β</label>
+            <output id="pw-val">0.20</output>
+          </div>
+          <input type="range" id="p-watts" min="0" max="1" step="0.01" value="0.2" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Metrics Readout -->
+    <section class="block">
+      <div class="block-label">READOUT</div>
+      <div class="metrics-grid">
+        <div class="metric">
+          <span class="mv" id="nodes-value">—</span>
+          <span class="ml">Nodes</span>
+        </div>
+        <div class="metric">
+          <span class="mv" id="edges-value">—</span>
+          <span class="ml">Edges</span>
+        </div>
+        <div class="metric">
+          <span class="mv" id="avg-degree-value">—</span>
+          <span class="ml">Avg Deg</span>
+        </div>
+        <div class="metric">
+          <span class="mv" id="density-value">—</span>
+          <span class="ml">Density</span>
+        </div>
+        <div class="metric">
+          <span class="mv" id="max-degree-value">—</span>
+          <span class="ml">Max Deg</span>
+        </div>
+        <div class="metric">
+          <span class="mv" id="avg-clustering-coefficient-value">—</span>
+          <span class="ml">Cluster</span>
+        </div>
+        <div class="metric">
+          <span class="mv" id="avg-path-length-value">—</span>
+          <span class="ml">Path Len</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Options -->
+    <section class="block">
+      <div class="block-label">OPTIONS</div>
+      <label class="toggle-row">
+        <span>Show Charts</span>
+        <span class="toggle">
+          <input type="checkbox" id="degree-distribution-switch" checked />
+          <span class="track"></span>
+        </span>
+      </label>
+      <label class="toggle-row">
+        <span>Scale by Degree</span>
+        <span class="toggle">
+          <input type="checkbox" id="node-size-switch" checked />
+          <span class="track"></span>
+        </span>
+      </label>
+    </section>
+
+    <!-- Regenerate -->
+    <section class="block regen-block">
+      <button id="regenerate" class="btn-regen">↻ REGENERATE</button>
+      <span class="hint"><kbd>Space</kbd> regenerate · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> switch model</span>
+    </section>
+
+    <footer class="panel-footer">
+      Made by <a href="https://murfy.netlify.app/" target="_blank" rel="noopener">@murf</a>
+    </footer>
+
+  </aside>
+
+  <!-- ─── Graph Canvas ─── -->
+  <main id="canvas-area">
+    <div id="cy"></div>
+    <div id="charts">
+      <div class="chart-box">
+        <div class="chart-title">Degree Distribution</div>
+        <canvas id="degree-distribution-line"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Degree Histogram</div>
+        <canvas id="degree-distribution-bar"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Clustering Coefficient</div>
+        <canvas id="clustering-coefficient-chart"></canvas>
+      </div>
     </div>
-    <script src="index.js"></script>
-  </body>
+  </main>
+
+  <script src="index.js"></script>
+</body>
+
 </html>
